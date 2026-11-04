@@ -1,20 +1,25 @@
 # project/app/config.py
 
-import logging
 from functools import lru_cache
 
-from pydantic import AnyUrl
 from pydantic_settings import BaseSettings
 
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger("uvicorn")
 
 class Settings(BaseSettings):
+    """
+    BaseSettings fetches values from our environment variables,
+    and assigns it to our fields (case-insensitive).
+    """
+
     environment: str = "dev"
-    testing: bool = 0
-    database_url: AnyUrl = None
+    testing: bool = False
+    database_url: str = ""
+
 
 @lru_cache()
 def get_settings() -> BaseSettings:
-    logger.info("Loading config settings from the environment...")
+    """
+    It is wrapped in the @lru_cache decorator so objects are read
+    once and stored, so it can be reused on every call.
+    """
     return Settings()
