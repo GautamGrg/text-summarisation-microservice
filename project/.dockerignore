@@ -2,4 +2,4 @@ env
 .dockerignore
 Dockerfile
 Dockerfile.prod
-DS_Store
+.DS_Store
