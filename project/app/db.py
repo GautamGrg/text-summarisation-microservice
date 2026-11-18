@@ -2,9 +2,10 @@
 # pylint: disable = C0116
 
 from fastapi import FastAPI
-from app.config import get_settings
 from tortoise import Tortoise, run_async
 from tortoise.contrib.fastapi import register_tortoise
+
+from app.config import get_settings
 
 TORTOISE_ORM = {
     "connections": {"default": get_settings().database_url},
