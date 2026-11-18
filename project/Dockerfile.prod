@@ -41,4 +41,4 @@ USER app
 
 # run gunicorn
 # shell form, with exec so the shell is replaced by gunicorn
-CMD exec gunicorn --bind 0.0.0.0:$PORT app.main:app -k uvicorn.workers.UvicornWorker
+CMD ["fastapi", "run", "app/main.py", "--workers", "2"]
