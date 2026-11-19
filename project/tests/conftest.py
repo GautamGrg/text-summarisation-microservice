@@ -11,6 +11,11 @@ from app.main import create_application
 
 
 def get_settings_override():
+    """
+    Overwrites production dependencies and targets
+    the test postgreSQL URL instead, so production is
+    never touched.
+    """
     return Settings(testing=1, database_url=os.environ.get("DATABASE_TEST_URL"))
 
 
@@ -24,9 +29,6 @@ def test_app():
 
 @pytest.fixture
 def test_app_with_db():
-    """
-    pass
-    """
     app = create_application()
     app.dependency_overrides[get_settings] = get_settings_override
     register_tortoise(

@@ -5,7 +5,7 @@ def test_create_summary(test_app_with_db):
     """
     From our test fixture, we're using the TestClient to
     POST - expecting response to return 201 and write to our
-    test DB
+    test database.
     """
     response = test_app_with_db.post(
         url="/summaries/",
@@ -18,9 +18,6 @@ def test_create_summary(test_app_with_db):
 
 
 def test_create_summaries_invalid_json(test_app):
-    """
-    pass
-    """
     response = test_app.post(url="/summaries/", json={})
     assert response.status_code == 422
     assert response.json() == {

@@ -39,6 +39,5 @@ RUN chown -R app:app /home/app
 # change to the app user
 USER app
 
-# run gunicorn
-# shell form, with exec so the shell is replaced by gunicorn
+# Run FastAPI with 2 deployed workers
 CMD ["fastapi", "run", "app/main.py", "--workers", "2"]

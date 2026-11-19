@@ -1,12 +1,11 @@
-name: Continuous Integration and Delivery
+name: Continuous Integration and Delivery pipeline (CI/CD)
 
-on: [push]
-
-env:
-    IMAGE: ghcr.io/$(echo $GITHUB_REPOSITORY | tr '[A-Z]' '[a-z]')/summarisation-microservice
+on: 
+  push:
+    branches:
+      - main
 
 jobs:
-
     build:
         name: Build Docker Image
         runs-on: ubuntu-latest
@@ -14,6 +13,8 @@ jobs:
           contents: read
           packages: write
         steps:
+          - name: Set image name
+            run: echo "IMAGE=ghcr.io/${GITHUB_REPOSITORY,,}/summarisation-microservice" >> "$GITHUB_ENV"
           - name: Checkout code
             uses: actions/checkout@v7
             with: 
@@ -24,23 +25,25 @@ jobs:
               GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           - name: Pull image
             run: | 
-              docker pull ${{ env.IMAGE }}:latest || true
+              docker pull "$IMAGE:latest" || true
           - name: Build image
             run: |
               docker build \
-                  --cache-from ${{ env.IMAGE }}:latest \
-                  --tag ${{ env.IMAGE }}:latest \
+                  --cache-from "$IMAGE:latest" \
+                  --tag "$IMAGE:latest" \
                   --file ./project/Dockerfile.prod \
                   "./project"
           - name: Push image
             run: |
-              docker push ${{ env.IMAGE }}:latest
+              docker push "$IMAGE:latest"
     
     test: 
       name: Test Docker Image
       runs-on: ubuntu-latest
       needs: build
       steps:
+        - name: Set image name
+          run: echo "IMAGE=ghcr.io/${GITHUB_REPOSITORY,,}/summarisation-microservice" >> "$GITHUB_ENV"
         - name: Checkout code
           uses: actions/checkout@v7
           with:
@@ -51,12 +54,12 @@ jobs:
             GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         - name: Pull image
           run: |
-            docker pull ${{ env.IMAGE }}:latest || true
+            docker pull "$IMAGE:latest" || true
         - name: Build image
           run: |
             docker build \
-                --cache-from ${{ env.IMAGE }}:latest \
-                --tag ${{ env.IMAGE }}:latest \
+                --cache-from "$IMAGE:latest" \
+                --tag "$IMAGE:latest" \
                 --file ./project/Dockerfile.prod \
                 "./project"
         - name: Run container
@@ -69,7 +72,7 @@ jobs:
                 -e DATABASE_URL=sqlite://sqlite.db \
                 -e DATABASE_TEST_URL=sqlite://sqlite.db \
                 -p 5003:8765 \
-                ${{ env.IMAGE }}:latest
+                "$IMAGE:latest"
         - name: Pytest
           run: docker exec text-summarisation-microservice python -m pytest
         - name: Flake8
@@ -78,3 +81,23 @@ jobs:
           run: docker exec text-summarisation-microservice python -m black . --check
         - name: Isort
           run: docker exec text-summarisation-microservice python -m isort . --check
+
+    deploy:
+      name: Deploy to Vercel
+      runs-on: ubuntu-latest
+      needs: [build, test]
+      env:
+        VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+        VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID}}
+        VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      steps:
+        - name: Checkout
+          uses: actions/checkout@v4
+        - name: Install Vercel CLI
+          run: npm install --global vercel@latest
+        - name: Pull vercel Environment information
+          run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
+        - name: Build Project Artifacts
+          run: vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
+        - name: Deploy Project Artifacts to Vercel
+          run: vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }}
